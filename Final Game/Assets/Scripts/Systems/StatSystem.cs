@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace HungerWinter.Systems
+namespace Hunger.Systems
 {
     public class StatSystem : MonoBehaviour
     {

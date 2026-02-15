@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace HungerWinter.Narrative
+namespace Hunger.Narrative
 {
     public class DialougeManager : MonoBehaviour
     {

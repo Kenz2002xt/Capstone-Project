@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace HungerWinter.Gameplay
+namespace Hunger.Gameplay
 {
     public class SacrificeSystem : MonoBehaviour
     {

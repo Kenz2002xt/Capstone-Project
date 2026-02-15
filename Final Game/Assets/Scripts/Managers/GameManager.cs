@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace HungerWinter.Managers
+namespace Hunger.Managers
 {
     public class GameManager : MonoBehaviour
     {

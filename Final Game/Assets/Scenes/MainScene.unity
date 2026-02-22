@@ -1497,7 +1497,7 @@ Light:
   serializedVersion: 11
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 2
+  m_Intensity: 1.04
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -2625,6 +2625,7 @@ MonoBehaviour:
   homeStat: 3
   selfStat: 3
   familyStat: 3
+  directionalLight: {fileID: 410087040}
 --- !u!4 &863212607
 Transform:
   m_ObjectHideFlags: 0
@@ -6125,6 +6126,22 @@ PrefabInstance:
       propertyPath: m_LocalPosition.y
       value: 1.8
       objectReference: {fileID: 0}
+    - target: {fileID: 556619294522721544, guid: 11aaea5348574644a9eb4f4504fcce3f, type: 3}
+      propertyPath: m_Resource
+      value: 
+      objectReference: {fileID: 8300000, guid: 0ae2ed98d5789cb47baa328bcaeb48ac, type: 3}
+    - target: {fileID: 556619294522721544, guid: 11aaea5348574644a9eb4f4504fcce3f, type: 3}
+      propertyPath: m_audioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0ae2ed98d5789cb47baa328bcaeb48ac, type: 3}
+    - target: {fileID: 3404824665309619301, guid: 11aaea5348574644a9eb4f4504fcce3f, type: 3}
+      propertyPath: m_Resource
+      value: 
+      objectReference: {fileID: 8300000, guid: 0ae2ed98d5789cb47baa328bcaeb48ac, type: 3}
+    - target: {fileID: 3404824665309619301, guid: 11aaea5348574644a9eb4f4504fcce3f, type: 3}
+      propertyPath: m_audioClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0ae2ed98d5789cb47baa328bcaeb48ac, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

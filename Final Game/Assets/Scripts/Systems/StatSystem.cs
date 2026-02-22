@@ -10,6 +10,18 @@ namespace Hunger.Systems
         public int selfStat = 3;
         public int familyStat = 3;
 
+        // Reference to the main scene light
+        public Light directionalLight;
+
+        private float baseIntensity = 1f;
+        private Color baseColor;
+
+        void Start()
+        {
+            // Store original light color at start
+            baseColor = directionalLight.color;
+        }
+
         public void ReduceStat(string categoryTag)
         {
             // Checks which category was sacrificed based on the item's tag
@@ -17,21 +29,42 @@ namespace Hunger.Systems
             {
                 // Reduce Home stat by 1
                 homeStat--;
+                ApplyColdTint();
             }
             else if (categoryTag == "Self")
             {
                 // Reduce Self stat by 1
                 selfStat--;
+                ApplyDarkness();
             }
             else if (categoryTag == "Family")
             {
                 // Reduce Family stat by 1
                 familyStat--;
+                ApplyWarmthLoss();
             }
 
             Debug.Log("Home: " + homeStat);
             Debug.Log("Self: " + selfStat);
             Debug.Log("Family: " + familyStat);
+        }
+
+        void ApplyColdTint()
+        {
+            // Shift light slightly toward blue
+            directionalLight.color = Color.Lerp(directionalLight.color, Color.blue, 0.6f);
+        }
+
+        void ApplyDarkness()
+        {
+            // Reduce light intensity
+            directionalLight.intensity -= 0.8f;
+        }
+
+        void ApplyWarmthLoss()
+        {
+            // Shift light toward white
+            directionalLight.color = Color.Lerp(directionalLight.color, Color.white, 0.8f);
         }
 
         public bool IsDead()

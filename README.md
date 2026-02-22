@@ -61,7 +61,9 @@ The MVP includes:
 - Basic win/lose conditions
 - Core player controls and interaction logic
   
-Rather than building full narrative content or multiple months of gameplay, the MVP prioritizes validating the central mechanic: making meaningful sacrifices under discovered resources. The prototype establishes a scalable system that can be expanded with more in-depth environmental feedback, narrative consequences, and additional content in future development phases.
+Rather than building full narrative content or multiple months of gameplay, the MVP prioritizes validating the central mechanic: making meaningful sacrifices under discovered resources. The prototype establishes a scalable system that can be expanded with more in-depth environmental feedback, narrative consequences, and additional content in future development phases. 
+
+MVP playthroughs can be seen on the Trello Board linked in "Resources"
 
 ## MVP Feedback
 During early testing of the MVP, several areas for improvement were identified.

@@ -12,6 +12,8 @@ namespace Hunger.Managers
         public StatSystem statSystem;       // Reference to the stat system (checks if player is dead)
         public RequestSystem requestSystem; // Reference to the request system (generates Don's request)
 
+        public CameraSwitcher cameraSwitcher; // Reference to camera system
+
         void Start()
         {
             Debug.Log("Game Manager Initialized");
@@ -22,6 +24,9 @@ namespace Hunger.Managers
 
         public void StartDay()
         {
+            // Move camera back to hallway at start of each day
+            cameraSwitcher.GoToStart();
+
             // Updates the UI to show the current day (ex: Day 1/3)
             FindFirstObjectByType<UIManager>().UpdateDay(currentDay);
             Debug.Log("Day " + currentDay);

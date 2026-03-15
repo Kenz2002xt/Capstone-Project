@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using Hunger.Managers;
 using Hunger.Systems;
 using Hunger.UI;
+using Hunger.Data;
 using UnityEngine;
 
 namespace Hunger.Gameplay
@@ -8,19 +10,29 @@ namespace Hunger.Gameplay
     public class SacrificeSystem : MonoBehaviour
     {
         public StatSystem statSystem;
+        public RequestSystem requestSystem;
 
-        // Stores the currently carried item (player can only carry one at a time)
-        private InteractableItem carriedItem = null;
+        // Stores all items the player has discovered through exploration
+        public List<ItemData> unlockedItems = new List<ItemData>();
+
+        // Stores the item currently selected for sacrifice
+        private ItemData selectedItem = null;
 
         // Tracks whether the player is inside the barn trigger area
         private bool playerInRange = false;
 
-        // Called when the player picks something up
-        public void SetCarriedItem(InteractableItem item)
+        // Called when the player discovers an item through exploration
+        public void AddItem(ItemData item)
         {
-            // Store the picked up item as the current carried item
-            carriedItem = item;
-            Debug.Log("Carrying: " + item.gameObject.name);
+            unlockedItems.Add(item);
+            Debug.Log("Discovered: " + item.itemName);
+        }
+
+        // Called when the player selects an item to sacrifice
+        public void SelectItem(ItemData item)
+        {
+            selectedItem = item;
+            Debug.Log("Selected for sacrifice: " + item.itemName);
         }
 
         private void Update()
@@ -31,33 +43,32 @@ namespace Hunger.Gameplay
             // If player presses the "1" key while inside the barn
             if (Input.GetKeyDown(KeyCode.Alpha1))
             {
-                // Sacrifice the carried item
-                SacrificeCarriedItem();
+                // Sacrifice the selected item
+                SacrificeSelectedItem();
             }
         }
 
-        void SacrificeCarriedItem()
+        void SacrificeSelectedItem()
         {
-            // If the player is not carrying anything, stop
-            if (carriedItem == null)
+            // If the player has not selected anything, stop
+            if (selectedItem == null)
             {
-                Debug.Log("You are not carrying anything.");
+                Debug.Log("No item selected.");
                 return;
             }
 
-            // Get the item's tag (category: Home, Self, Family)
-            string category = carriedItem.gameObject.tag;
+            // Get the item's category (Home, Self, Family)
+            string category = selectedItem.statTag;
 
             // Reduce the corresponding survival stat based on the item's category
             statSystem.ReduceStat(category);
-            Debug.Log(carriedItem.gameObject.name + " sacrificed!");
+            Debug.Log(selectedItem.itemName + " sacrificed!");
 
-            // Clear the carried item (player is no longer holding anything)
-            carriedItem = null;
+            // Remove the item so it cannot be used again
+            unlockedItems.Remove(selectedItem);
 
-            // Clear the Item text in the UI
-            UIManager ui = FindFirstObjectByType<UIManager>();
-            ui.ClearItem();
+            // Clear the selected item
+            selectedItem = null;
 
             // Tell the GameManager to end the current day
             FindFirstObjectByType<GameManager>().EndDay();
@@ -70,7 +81,7 @@ namespace Hunger.Gameplay
             {
                 // Allow sacrificing
                 playerInRange = true;
-                Debug.Log("Press 1 to sacrifice carried item.");
+                Debug.Log("Press 1 to sacrifice selected item.");
             }
         }
 

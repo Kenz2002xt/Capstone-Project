@@ -1,43 +1,117 @@
 using TMPro;
 using UnityEngine;
+using Hunger.Systems;
+using UnityEditor.Rendering;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Hunger.UI
 {
     public class UIManager : MonoBehaviour
     {
         // References to UI text elements in the Canvas
-        public TextMeshProUGUI requestText;  // Displays Don's current request
-        public TextMeshProUGUI itemText;     // Displays currently carried item
-        public TextMeshProUGUI dayText;      // Displays current day (ex: 1/3)
-        public TextMeshProUGUI endText;      // Displays win or loss message
+        public TextMeshProUGUI requestText;
+        public TextMeshProUGUI dialogueText;
+        public TextMeshProUGUI dayText;
+        public TextMeshProUGUI endText;
 
+        // Journal UI
+        public GameObject optionsPanel;
+        public GameObject journal;
+
+        // Camera system
+        public CameraSwitcher cameraSwitcher;
+
+        void Start()
+        {
+            // Hide the options panel when the game starts
+            optionsPanel.SetActive(false);
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        // JOURNAL BUTTON
+        public void OpenJournal()
+        {
+            optionsPanel.SetActive(true);
+        }
+
+        // CLOSE BUTTON
+        public void CloseJournal()
+        {
+            optionsPanel.SetActive(false);
+        }
+
+        // ROOM BUTTONS
+
+        public void GoToSisterRoom()
+        {
+            cameraSwitcher.GoToSisterRoom();
+            optionsPanel.SetActive(false);
+        }
+
+        public void GoToParentsRoom()
+        {
+            cameraSwitcher.GoToParentsRoom();
+            optionsPanel.SetActive(false);
+        }
+
+        public void GoToKitchen()
+        {
+            cameraSwitcher.GoToKitchen();
+            optionsPanel.SetActive(false);
+        }
+
+        public void GoToBathroom()
+        {
+            cameraSwitcher.GoToBathroom();
+            optionsPanel.SetActive(false);
+        }
+
+        public void LookOutWindow()
+        {
+            cameraSwitcher.LookOutWindow();
+            optionsPanel.SetActive(false);
+        }
+
+        public void GoToLeaveDoor()
+        {
+            cameraSwitcher.GoToLeaveDoor();
+            optionsPanel.SetActive(false);
+            journal.SetActive(false);
+            Cursor.visible = false;
+        }
+
+        // --- UI TEXT FUNCTIONS ---
+
+        // Don's request
         public void UpdateRequest(string request)
         {
-            // Updates the request UI text
             requestText.text = "Don Wants: " + request;
         }
 
-        public void UpdateItem(string itemName)
+        public void ShowDialogue(string text)
         {
-            // Updates the item UI text when player picks something up
-            itemText.text = "Item: " + itemName;
+            dialogueText.text = text;
+
+            StopAllCoroutines(); // prevents overlapping timers
+            StartCoroutine(ClearDialogueAfterTime());
         }
 
-        public void ClearItem()
+        IEnumerator ClearDialogueAfterTime()
         {
-            // Clears the item UI text after sacrificing
-            itemText.text = "Item: ";
+            yield return new WaitForSeconds(3f);
+
+            dialogueText.text = "";
         }
 
         public void UpdateDay(int currentDay)
         {
-            // Updates the day display
             dayText.text = "Day: " + currentDay + "/3";
         }
 
         public void ShowEnd(string result)
         {
-            // Displays final result message ("Game Won" or "Game Lost")
             endText.text = result;
         }
     }

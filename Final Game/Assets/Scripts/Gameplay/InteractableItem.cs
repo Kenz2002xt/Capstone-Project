@@ -8,6 +8,7 @@ namespace Hunger.Gameplay
         public ItemData item;
 
         private ExplorationSystem explorationSystem;
+        private bool discovered = false;
 
         private void Start()
         {
@@ -16,9 +17,11 @@ namespace Hunger.Gameplay
 
         private void OnMouseDown()
         {
-            explorationSystem.DiscoverItem(item);
-
-            gameObject.SetActive(false);
+            if (!discovered)
+            {
+                explorationSystem.DiscoverItem(item);
+                discovered = true;
+            }
         }
     }
 }

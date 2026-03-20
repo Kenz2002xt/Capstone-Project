@@ -4,6 +4,7 @@ using Hunger.Systems;
 using UnityEditor.Rendering;
 using System.Collections;
 using System.Collections.Generic;
+using Hunger.Gameplay;
 
 namespace Hunger.UI
 {
@@ -18,6 +19,9 @@ namespace Hunger.UI
         // Journal UI
         public GameObject optionsPanel;
         public GameObject journal;
+
+        // Exploration System
+        public ExplorationSystem explorationSystem;
 
         // Camera system
         public CameraSwitcher cameraSwitcher;
@@ -46,24 +50,52 @@ namespace Hunger.UI
 
         public void GoToSisterRoom()
         {
+            if (!explorationSystem.CanExploreRoom())
+            {
+                ShowDialogue("You are too tired to search another room today.");
+                return;
+            }
+
+            explorationSystem.RoomExplored();
             cameraSwitcher.GoToSisterRoom();
             optionsPanel.SetActive(false);
         }
 
         public void GoToParentsRoom()
         {
+            if (!explorationSystem.CanExploreRoom())
+            {
+                ShowDialogue("You are too tired to search another room today.");
+                return;
+            }
+
+            explorationSystem.RoomExplored();
             cameraSwitcher.GoToParentsRoom();
             optionsPanel.SetActive(false);
         }
 
         public void GoToKitchen()
         {
+            if (!explorationSystem.CanExploreRoom())
+            {
+                ShowDialogue("You are too tired to search another room today.");
+                return;
+            }
+
+            explorationSystem.RoomExplored();
             cameraSwitcher.GoToKitchen();
             optionsPanel.SetActive(false);
         }
 
         public void GoToBathroom()
         {
+            if (!explorationSystem.CanExploreRoom())
+            {
+                ShowDialogue("You are too tired to search another room today.");
+                return;
+            }
+
+            explorationSystem.RoomExplored();
             cameraSwitcher.GoToBathroom();
             optionsPanel.SetActive(false);
         }

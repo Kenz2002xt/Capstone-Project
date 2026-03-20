@@ -12,13 +12,33 @@ namespace Hunger.Gameplay
         // Items the player has discovered today
         public List<ItemData> discoveredItems = new List<ItemData>();
 
-        // Limit exploration per day
-        public int investigationsRemaining = 2;
+        // Room exploration limits
+        public int roomsExploredToday = 0;
+        public int maxRoomsPerDay = 2;
 
-        public void ResetInvestigations()
+        // ---------- DAY RESET ----------
+
+        public void ResetDay()
         {
-            investigationsRemaining = 2;
+            roomsExploredToday = 0;
+            discoveredItems.Clear();
         }
+
+        // ---------- ROOM CHECK ----------
+
+        public bool CanExploreRoom()
+        {
+            return roomsExploredToday < maxRoomsPerDay;
+        }
+
+        public void RoomExplored()
+        {
+            roomsExploredToday++;
+
+            Debug.Log("Rooms explored today: " + roomsExploredToday);
+        }
+
+        // ---------- ITEM DISCOVERY ----------
 
         public void DiscoverItem(ItemData item)
         {

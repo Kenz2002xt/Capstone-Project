@@ -23,5 +23,11 @@ namespace Hunger.Gameplay
                 discovered = true;
             }
         }
+
+        // Reset each day
+        public void ResetItem()
+        {
+            discovered = false;
+        }
     }
 }

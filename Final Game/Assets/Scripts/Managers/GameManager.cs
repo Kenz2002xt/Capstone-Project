@@ -1,3 +1,4 @@
+using Hunger.Gameplay;
 using Hunger.Systems;
 using Hunger.UI;
 using UnityEngine;
@@ -7,12 +8,15 @@ namespace Hunger.Managers
     public class GameManager : MonoBehaviour
     {
         public int currentDay = 1;   // Tracks the current day (starts at Day 1)
-        public int maxDays = 3;      // Maximum number of days required to win
+        public int maxDays = 10;      // Maximum number of days required to win
 
         public StatSystem statSystem;       // Reference to the stat system (checks if player is dead)
         public RequestSystem requestSystem; // Reference to the request system (generates Don's request)
 
         public CameraSwitcher cameraSwitcher; // Reference to camera system
+        public UIManager uiManager; // Reference to UI
+        public ExplorationSystem explorationSystem; // Reference to exploration
+        public NarrativeManager narrativeManager;
 
         void Start()
         {
@@ -24,15 +28,27 @@ namespace Hunger.Managers
 
         public void StartDay()
         {
-            // Move camera back to hallway at start of each day
+            // --- RESET CAMERA ---
             cameraSwitcher.GoToStart();
 
-            // Updates the UI to show the current day (ex: Day 1/3)
-            FindFirstObjectByType<UIManager>().UpdateDay(currentDay);
-            Debug.Log("Day " + currentDay);
+            // --- RESET UI ---
+            uiManager.journal.SetActive(true);          // bring journal back
+            uiManager.optionsPanel.SetActive(false);    // close journal panel
+            uiManager.HideSacrificeOptions();           // hide sacrifice UI
 
-            // Generates a new request for day
-            requestSystem.GenerateRequest();
+            // --- RESET CURSOR ---
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
+            // --- RESET EXPLORATION ---
+            explorationSystem.ResetDay();
+
+            // --- UPDATE UI TEXT ---
+            uiManager.UpdateDay(currentDay);
+            //requestSystem.GenerateRequest();
+            narrativeManager.StartDayFlow(currentDay);
+
+            Debug.Log("Day " + currentDay);
         }
 
         public void EndDay()
@@ -41,7 +57,7 @@ namespace Hunger.Managers
             if (statSystem.IsDead())
             {
                 // If player is dead then show Game Lost on the UI
-                FindFirstObjectByType<UIManager>().ShowEnd("Game Lost");
+                uiManager.ShowEnd("Game Lost");
                 Debug.Log("You did not survive winter");
                 return;
             }
@@ -53,7 +69,7 @@ namespace Hunger.Managers
             if (currentDay > maxDays)
             {
                 // Show Game Won message on UI
-                FindFirstObjectByType<UIManager>().ShowEnd("Game Won");
+                uiManager.ShowEnd("Game Won");
                 Debug.Log("You survived until spring");
                 return;
             }

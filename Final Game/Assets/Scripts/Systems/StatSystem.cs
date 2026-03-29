@@ -6,9 +6,9 @@ namespace Hunger.Systems
     {
         // Tracks the survival values for each category
         // Each stat starts at 3 (player can survive 3 sacrifices per category)
-        public int homeStat = 3;
-        public int selfStat = 3;
-        public int familyStat = 3;
+        public int homeStat = 100;
+        public int selfStat = 100;
+        public int familyStat = 100;
 
         // Reference to the main scene light
         public Light directionalLight;
@@ -22,25 +22,21 @@ namespace Hunger.Systems
             baseColor = directionalLight.color;
         }
 
-        public void ReduceStat(string categoryTag)
+        public void ReduceStat(string categoryTag, int amount)
         {
-            // Checks which category was sacrificed based on the item's tag
             if (categoryTag == "Home")
             {
-                // Reduce Home stat by 1
-                homeStat--;
+                homeStat -= amount;
                 ApplyColdTint();
             }
             else if (categoryTag == "Self")
             {
-                // Reduce Self stat by 1
-                selfStat--;
+                selfStat -= amount;
                 ApplyDarkness();
             }
             else if (categoryTag == "Family")
             {
-                // Reduce Family stat by 1
-                familyStat--;
+                familyStat -= amount;
                 ApplyWarmthLoss();
             }
 

@@ -1,98 +1,102 @@
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
+using Hunger.Data;
 using Hunger.Managers;
 using Hunger.Systems;
 using Hunger.UI;
-using Hunger.Data;
-using UnityEngine;
 
 namespace Hunger.Gameplay
 {
     public class SacrificeSystem : MonoBehaviour
     {
         public StatSystem statSystem;
-        public RequestSystem requestSystem;
+        public ExplorationSystem explorationSystem;
+        public UIManager uiManager;
 
-        // Stores all items the player has discovered through exploration
-        public List<ItemData> unlockedItems = new List<ItemData>();
-
-        // Stores the item currently selected for sacrifice
-        private ItemData selectedItem = null;
-
-        // Tracks whether the player is inside the barn trigger area
-        private bool playerInRange = false;
-
-        // Called when the player discovers an item through exploration
-        public void AddItem(ItemData item)
+        // Called when player reaches the barn
+        public void OpenSacrificeMenu()
         {
-            unlockedItems.Add(item);
-            Debug.Log("Discovered: " + item.itemName);
-        }
+            List<ItemData> items = explorationSystem.discoveredItems;
 
-        // Called when the player selects an item to sacrifice
-        public void SelectItem(ItemData item)
-        {
-            selectedItem = item;
-            Debug.Log("Selected for sacrifice: " + item.itemName);
-        }
-
-        private void Update()
-        {
-            // If the player is not inside the barn trigger, do nothing
-            if (!playerInRange) return;
-
-            // If player presses the "1" key while inside the barn
-            if (Input.GetKeyDown(KeyCode.Alpha1))
+            if (items.Count == 0)
             {
-                // Sacrifice the selected item
-                SacrificeSelectedItem();
-            }
-        }
-
-        void SacrificeSelectedItem()
-        {
-            // If the player has not selected anything, stop
-            if (selectedItem == null)
-            {
-                Debug.Log("No item selected.");
+                uiManager.ShowDialogue("You have nothing to offer...");
                 return;
             }
 
-            // Get the item's category (Home, Self, Family)
-            string category = selectedItem.statTag;
+            uiManager.ShowSacrificeOptions(items, this);
+        }
 
-            // Reduce the corresponding survival stat based on the item's category
-            statSystem.ReduceStat(category);
-            Debug.Log(selectedItem.itemName + " sacrificed!");
+        // Called by UI button when sacrificing an item
+        public void SacrificeItem(ItemData item)
+        {
+            RequestSystem requestSystem = FindFirstObjectByType<RequestSystem>();
 
-            // Remove the item so it cannot be used again
-            unlockedItems.Remove(selectedItem);
+            bool matchesRequest = false;
 
-            // Clear the selected item
-            selectedItem = null;
+            // Check if any tag matches Don's request
+            foreach (string tag in item.requestTags)
+            {
+                if (tag == requestSystem.currentRequest)
+                {
+                    matchesRequest = true;
+                    break;
+                }
+            }
 
-            // Tell the GameManager to end the current day
+            // Calculate value
+            int finalValue = item.value + item.sacrificeWeight;
+
+            if (!matchesRequest)
+            {
+                finalValue += 5; // penalty
+                uiManager.ShowDialogue("That didn’t seem to help...");
+            }
+            else
+            {
+                uiManager.ShowDialogue("Don seems satisfied.");
+            }
+
+            // Apply stat change
+            statSystem.ReduceStat(item.statTag, finalValue);
+
+            Debug.Log(item.itemName + " sacrificed! Value applied: " + finalValue);
+
+            // Remove from today's discovered list
+            explorationSystem.discoveredItems.Remove(item);
+
+            // Permanently consume item
+            explorationSystem.consumedItems.Add(item);
+
+            // Close sacrifice UI
+            uiManager.HideSacrificeOptions();
+
+            // Get consequence text
+            string consequenceText = "You feel something has changed...";
+            if (item.consequenceLines != null && item.consequenceLines.Length > 0)
+            {
+                consequenceText = item.consequenceLines[
+                    Random.Range(0, item.consequenceLines.Length)
+                ];
+            }
+
+            // run coroutine instead of ending day immediately
+            StartCoroutine(HandleEndOfDay(consequenceText));
+        }
+
+        // controls proper end-of-day flow
+        IEnumerator HandleEndOfDay(string consequenceText)
+        {
+            NarrativeUI narrativeUI = FindFirstObjectByType<NarrativeUI>();
+
+            // Show consequence text and WAIT for it to finish
+            yield return StartCoroutine(
+               narrativeUI.ShowConsequenceRoutine(consequenceText, true)
+            );
+
+            // Now safely move to next day
             FindFirstObjectByType<GameManager>().EndDay();
-        }
-
-        private void OnTriggerEnter(Collider other)
-        {
-            // If the player enters the barn trigger
-            if (other.CompareTag("Player"))
-            {
-                // Allow sacrificing
-                playerInRange = true;
-                Debug.Log("Press 1 to sacrifice selected item.");
-            }
-        }
-
-        private void OnTriggerExit(Collider other)
-        {
-            // If the player leaves the barn trigger
-            if (other.CompareTag("Player"))
-            {
-                // Disable sacrificing
-                playerInRange = false;
-            }
         }
     }
 }

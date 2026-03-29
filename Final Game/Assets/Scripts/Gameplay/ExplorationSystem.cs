@@ -9,8 +9,11 @@ namespace Hunger.Gameplay
     {
         public UIManager uiManager;
 
-        // Items the player has discovered today
+        // Items discovered THIS DAY
         public List<ItemData> discoveredItems = new List<ItemData>();
+
+        // Items permanently used this run
+        public List<ItemData> consumedItems = new List<ItemData>();
 
         // Room exploration limits
         public int roomsExploredToday = 0;
@@ -34,7 +37,6 @@ namespace Hunger.Gameplay
         public void RoomExplored()
         {
             roomsExploredToday++;
-
             Debug.Log("Rooms explored today: " + roomsExploredToday);
         }
 
@@ -42,16 +44,14 @@ namespace Hunger.Gameplay
 
         public void DiscoverItem(ItemData item)
         {
-            if (!discoveredItems.Contains(item))
+            if (!discoveredItems.Contains(item) && !consumedItems.Contains(item))
             {
                 discoveredItems.Add(item);
 
-                // Pick a random dialogue line
                 string line = item.descriptions[
                     Random.Range(0, item.descriptions.Length)
                 ];
 
-                // Show it on the UI
                 uiManager.ShowDialogue(line);
 
                 Debug.Log("Discovered: " + item.itemName);

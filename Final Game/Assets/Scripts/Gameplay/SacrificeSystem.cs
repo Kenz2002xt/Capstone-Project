@@ -48,14 +48,16 @@ namespace Hunger.Gameplay
             // Calculate value
             int finalValue = item.value + item.sacrificeWeight;
 
+            string matchResultText = "";
+
             if (!matchesRequest)
             {
-                finalValue += 5; // penalty
-                uiManager.ShowDialogue("That didn’t seem to help...");
+                finalValue += 8; // penalty
+                matchResultText = "That didn’t seem to help...";
             }
             else
             {
-                uiManager.ShowDialogue("Don seems satisfied.");
+                matchResultText = "Don seems satisfied.";
             }
 
             // Apply stat change
@@ -73,13 +75,21 @@ namespace Hunger.Gameplay
             uiManager.HideSacrificeOptions();
 
             // Get consequence text
-            string consequenceText = "You feel something has changed...";
+            string consequenceText = "";
+
             if (item.consequenceLines != null && item.consequenceLines.Length > 0)
             {
                 consequenceText = item.consequenceLines[
                     Random.Range(0, item.consequenceLines.Length)
                 ];
             }
+            else
+            {
+                consequenceText = "You feel something has changed...";
+            }
+
+            // APPEND MATCH RESULT AT THE END
+            consequenceText += "\n\n" + matchResultText;
 
             // run coroutine instead of ending day immediately
             StartCoroutine(HandleEndOfDay(consequenceText));

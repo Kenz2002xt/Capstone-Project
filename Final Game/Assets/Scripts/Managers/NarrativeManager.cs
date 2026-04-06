@@ -25,6 +25,8 @@ namespace Hunger.Managers
         public bool isMorning = false;
         private int morningInteractions = 0;
 
+        public bool requestPending = false;
+
         public void StartDayFlow(int day)
         {
             StartCoroutine(RunDay(day));
@@ -34,9 +36,15 @@ namespace Hunger.Managers
         {
             GameEvent e = GetRandomEvent();
 
+            string eventText = "December " + day + "...\n\n" + e.description;
+
+            if (!string.IsNullOrEmpty(e.resultHint))
+            {
+                eventText += "\n\n" + e.resultHint;
+            }
+
             FindFirstObjectByType<UIBackgroundController>().SetDay();
-            yield return StartCoroutine(narrativeUI.ShowTextRoutine(
-                "December " + day + "...\n\n" + e.description));
+            yield return StartCoroutine(narrativeUI.ShowTextRoutine(eventText));
 
             ApplyEvent(e);
 
@@ -46,13 +54,13 @@ namespace Hunger.Managers
 
             yield return new WaitUntil(() => morningFinished);
 
-            // --- REQUEST ---
             requestSystem.GenerateRequest();
         }
 
         void EnableMorning()
         {
             isMorning = true;
+            requestPending = false;
             morningInteractions = 0;
 
             UIManager ui = FindFirstObjectByType<UIManager>();
@@ -75,6 +83,7 @@ namespace Hunger.Managers
             FindFirstObjectByType<UIManager>().isMorningPhase = false;
             isMorning = false;
             morningFinished = true;
+            requestPending = true;
 
             FindFirstObjectByType<UIManager>().ShowDialogue("I should see what Don wants.");
         }
@@ -116,6 +125,14 @@ namespace Hunger.Managers
 
             if (e.affectedStat == "Self")
                 statSystem.selfStat += e.statChange;
+
+            // BONUS ITEM
+            if (e.bonusItem != null)
+            {
+                FindFirstObjectByType<ExplorationSystem>().discoveredItems.Add(e.bonusItem);
+
+                Debug.Log("Bonus item added: " + e.bonusItem.itemName);
+            }
         }
     }
 }

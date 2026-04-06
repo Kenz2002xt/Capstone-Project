@@ -4,22 +4,29 @@ namespace Hunger.Systems
 {
     public class StatSystem : MonoBehaviour
     {
-        // Tracks the survival values for each category
-        // Each stat starts at 3 (player can survive 3 sacrifices per category)
         public int homeStat = 100;
         public int selfStat = 100;
         public int familyStat = 100;
 
-        // Reference to the main scene light
         public Light directionalLight;
 
-        private float baseIntensity = 1f;
         private Color baseColor;
+        private float baseIntensity;
+
+        [Header("Animation Controllers")]
+        public CharacterAnimationController motherController;
+        public CharacterAnimationController fatherController;
+        public CharacterAnimationController sisterController;
 
         void Start()
         {
-            // Store original light color at start
-            baseColor = directionalLight.color;
+            if (directionalLight != null)
+            {
+                baseColor = directionalLight.color;
+                baseIntensity = directionalLight.intensity;
+            }
+
+            UpdateAnimations(); // IMPORTANT: sets idle at game start
         }
 
         public void ReduceStat(string categoryTag, int amount)
@@ -40,39 +47,60 @@ namespace Hunger.Systems
                 ApplyWarmthLoss();
             }
 
-            Debug.Log("Home: " + homeStat);
-            Debug.Log("Self: " + selfStat);
-            Debug.Log("Family: " + familyStat);
+            ClampStats();
+            UpdateAnimations();
+
+            Debug.Log($"Home: {homeStat} | Self: {selfStat} | Family: {familyStat}");
+        }
+
+        void ClampStats()
+        {
+            homeStat = Mathf.Clamp(homeStat, 0, 100);
+            selfStat = Mathf.Clamp(selfStat, 0, 100);
+            familyStat = Mathf.Clamp(familyStat, 0, 100);
+        }
+
+        void UpdateAnimations()
+        {
+            float lowestStat = Mathf.Min(homeStat, selfStat, familyStat);
+
+            float stateValue;
+
+            if (lowestStat < 50)
+                stateValue = 25f;   // LOW
+            else if (lowestStat < 85)
+                stateValue = 70f;   // MEDIUM
+            else
+                stateValue = 100f;  // HIGH
+
+            motherController?.UpdateAnimation(stateValue);
+            fatherController?.UpdateAnimation(stateValue);
+            sisterController?.UpdateAnimation(stateValue);
+
+            Debug.Log("Animation StateLevel set to: " + stateValue);
         }
 
         void ApplyColdTint()
         {
-            // Shift light slightly toward blue
-            directionalLight.color = Color.Lerp(directionalLight.color, Color.blue, 0.6f);
+            if (directionalLight != null)
+                directionalLight.color = Color.Lerp(directionalLight.color, Color.blue, 0.6f);
         }
 
         void ApplyDarkness()
         {
-            // Reduce light intensity
-            directionalLight.intensity -= 0.8f;
+            if (directionalLight != null)
+                directionalLight.intensity = Mathf.Max(0, directionalLight.intensity - 0.8f);
         }
 
         void ApplyWarmthLoss()
         {
-            // Shift light toward white
-            directionalLight.color = Color.Lerp(directionalLight.color, Color.white, 0.8f);
+            if (directionalLight != null)
+                directionalLight.color = Color.Lerp(directionalLight.color, Color.white, 0.8f);
         }
 
         public bool IsDead()
         {
-            // Check if any stat has reached zero or below
-
-            if (homeStat <= 0) return true;
-            else if (selfStat <= 0) return true;
-            else if (familyStat <= 0) return true;
-
-            // If all stats are above zero, player is still alive
-            return false;
+            return homeStat <= 0 || selfStat <= 0 || familyStat <= 0;
         }
     }
 }

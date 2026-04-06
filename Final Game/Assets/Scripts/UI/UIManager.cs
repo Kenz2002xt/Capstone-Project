@@ -1,12 +1,11 @@
 using TMPro;
 using UnityEngine;
-using Hunger.Systems;
-using UnityEditor.Rendering;
 using System.Collections;
 using System.Collections.Generic;
 using Hunger.Gameplay;
 using Hunger.Data;
 using Hunger.Managers;
+using Hunger.Systems;
 
 namespace Hunger.UI
 {
@@ -30,6 +29,11 @@ namespace Hunger.UI
         public RoomItemManager bathroomManager;
         public NarrativeManager narrativeManager;
 
+        // Morning dialogue data
+        public List<MorningDialogueData> parentMorningDialogues;
+        public List<MorningDialogueData> sisterMorningDialogues;
+        public List<MorningDialogueData> selfMorningDialogues;
+
         // MORNING FLAGS
         private bool visitedParents = false;
         private bool visitedSister = false;
@@ -46,7 +50,6 @@ namespace Hunger.UI
 
         void Start()
         {
-            // Hide the options panel when the game starts
             optionsPanel.SetActive(false);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -73,9 +76,53 @@ namespace Hunger.UI
             visitedSelf = false;
         }
 
+        MorningDialogueData GetDialogueForDay(List<MorningDialogueData> dialogueList)
+        {
+            int day = FindFirstObjectByType<GameManager>().currentDay - 1;
+            day = Mathf.Clamp(day, 0, dialogueList.Count - 1);
+            return dialogueList[day];
+        }
+
+        IEnumerator PlayMorningDialogue(
+            MorningDialogueData data,
+            System.Action firstGood,
+            System.Action firstBad,
+            System.Action secondGood,
+            System.Action secondBad)
+        {
+            NarrativeUI ui = FindFirstObjectByType<NarrativeUI>();
+
+            yield return StartCoroutine(ui.ShowChoiceRoutine(
+                data.firstLine,
+                data.firstChoiceA,
+                data.firstChoiceB,
+                firstGood,
+                firstBad
+            ));
+
+            yield return StartCoroutine(ui.ShowChoiceRoutine(
+                data.secondLine,
+                data.secondChoiceA,
+                data.secondChoiceB,
+                secondGood,
+                secondBad
+            ));
+
+            yield return StartCoroutine(ui.ShowTextRoutine(
+                data.finalLine
+            ));
+        }
+
         public void GoToSisterRoom()
         {
             Debug.Log("Morning Phase: " + isMorningPhase);
+
+            if (narrativeManager.requestPending)
+            {
+                ShowDialogue("I should see what Don wants first.");
+                return;
+            }
+
             if (isMorningPhase)
             {
                 if (visitedSister)
@@ -85,7 +132,6 @@ namespace Hunger.UI
                 }
 
                 visitedSister = true;
-
                 StartCoroutine(SisterMorningRoutine());
                 optionsPanel.SetActive(false);
                 return;
@@ -106,32 +152,19 @@ namespace Hunger.UI
 
         IEnumerator SisterMorningRoutine()
         {
-            NarrativeUI ui = FindFirstObjectByType<NarrativeUI>();
             StatSystem stats = FindFirstObjectByType<StatSystem>();
             NarrativeManager nm = FindFirstObjectByType<NarrativeManager>();
 
-            // FIRST EXCHANGE
             FindFirstObjectByType<UIBackgroundController>().SetSister();
-            yield return StartCoroutine(ui.ShowChoiceRoutine(
-                "She’s sitting on the bed, hugging her knees.\n\n\"It was loud again last night…\"",
-                "I heard it too.",
-                "It was just the wind.",
+
+            MorningDialogueData data = GetDialogueForDay(sisterMorningDialogues);
+
+            yield return StartCoroutine(PlayMorningDialogue(
+                data,
+                () => stats.familyStat += 5,
+                () => stats.familyStat -= 5,
                 () => stats.familyStat += 5,
                 () => stats.familyStat -= 5
-            ));
-
-            // SECOND EXCHANGE
-            yield return StartCoroutine(ui.ShowChoiceRoutine(
-                "\"Do you think it’s gonna stop?\"",
-                "Yeah… it will.",
-                "I don’t know.",
-                () => stats.familyStat += 5,
-                () => stats.familyStat -= 5
-            ));
-
-            // FINAL LINE
-            yield return StartCoroutine(ui.ShowTextRoutine(
-                "She nods, but she doesn’t really look convinced."
             ));
 
             nm.RegisterMorningInteraction();
@@ -139,6 +172,12 @@ namespace Hunger.UI
 
         public void GoToParentsRoom()
         {
+            if (narrativeManager.requestPending)
+            {
+                ShowDialogue("I should see what Don wants first.");
+                return;
+            }
+
             if (isMorningPhase)
             {
                 if (visitedParents)
@@ -148,7 +187,6 @@ namespace Hunger.UI
                 }
 
                 visitedParents = true;
-
                 StartCoroutine(ParentsMorningRoutine());
                 optionsPanel.SetActive(false);
                 return;
@@ -166,34 +204,22 @@ namespace Hunger.UI
             parentRoomManager.GenerateRoomItems();
             optionsPanel.SetActive(false);
         }
+
         IEnumerator ParentsMorningRoutine()
         {
-            NarrativeUI ui = FindFirstObjectByType<NarrativeUI>();
             StatSystem stats = FindFirstObjectByType<StatSystem>();
             NarrativeManager nm = FindFirstObjectByType<NarrativeManager>();
 
-            // FIRST EXCHANGE
             FindFirstObjectByType<UIBackgroundController>().SetParents();
-            yield return StartCoroutine(ui.ShowChoiceRoutine(
-                "Mom looks tired. \"Did you sleep okay?\"",
-                "Yeah… I think so.",
-                "No. I kept waking up.",
+
+            MorningDialogueData data = GetDialogueForDay(parentMorningDialogues);
+
+            yield return StartCoroutine(PlayMorningDialogue(
+                data,
+                () => stats.homeStat += 5,
+                () => stats.homeStat -= 5,
                 () => stats.homeStat += 5,
                 () => stats.homeStat -= 5
-            ));
-
-            // SECOND EXCHANGE
-            yield return StartCoroutine(ui.ShowChoiceRoutine(
-                "\"Try to stay warm.\"",
-                "I will.",
-                "We’re running out of wood.",
-                () => stats.homeStat += 5,
-                () => stats.homeStat -= 5
-            ));
-
-            // FINAL LINE (no choice)
-            yield return StartCoroutine(ui.ShowTextRoutine(
-                "They don’t say anything after that."
             ));
 
             nm.RegisterMorningInteraction();
@@ -201,6 +227,12 @@ namespace Hunger.UI
 
         public void GoToKitchen()
         {
+            if (narrativeManager.requestPending)
+            {
+                ShowDialogue("I should see what Don wants first.");
+                return;
+            }
+
             if (isMorningPhase)
             {
                 ShowDialogue("You don’t feel like eating right now.");
@@ -222,6 +254,13 @@ namespace Hunger.UI
         public void GoToBathroom()
         {
             Debug.Log("Morning Phase: " + isMorningPhase);
+
+            if (narrativeManager.requestPending)
+            {
+                ShowDialogue("I should see what Don wants first.");
+                return;
+            }
+
             if (isMorningPhase)
             {
                 if (visitedSelf)
@@ -231,7 +270,6 @@ namespace Hunger.UI
                 }
 
                 visitedSelf = true;
-
                 StartCoroutine(SelfMorningRoutine());
                 optionsPanel.SetActive(false);
                 return;
@@ -252,32 +290,19 @@ namespace Hunger.UI
 
         IEnumerator SelfMorningRoutine()
         {
-            NarrativeUI ui = FindFirstObjectByType<NarrativeUI>();
             StatSystem stats = FindFirstObjectByType<StatSystem>();
             NarrativeManager nm = FindFirstObjectByType<NarrativeManager>();
 
-            // FIRST EXCHANGE
             FindFirstObjectByType<UIBackgroundController>().SetBathroom();
-            yield return StartCoroutine(ui.ShowChoiceRoutine(
-                "You stare at yourself in the mirror.\n\nYou look tired.",
-                "I’m fine.",
-                "I look awful.",
+
+            MorningDialogueData data = GetDialogueForDay(selfMorningDialogues);
+
+            yield return StartCoroutine(PlayMorningDialogue(
+                data,
+                () => stats.selfStat += 5,
+                () => stats.selfStat -= 5,
                 () => stats.selfStat += 5,
                 () => stats.selfStat -= 5
-            ));
-
-            // SECOND EXCHANGE
-            yield return StartCoroutine(ui.ShowChoiceRoutine(
-                "Your hands feel cold.\n\nYou don’t remember when that started.",
-                "It’s nothing.",
-                "Something’s wrong.",
-                () => stats.selfStat += 5,
-                () => stats.selfStat -= 5
-            ));
-
-            // FINAL LINE
-            yield return StartCoroutine(ui.ShowTextRoutine(
-                "You look away from the mirror."
             ));
 
             nm.RegisterMorningInteraction();
@@ -295,7 +320,11 @@ namespace Hunger.UI
             cameraSwitcher.LookOutWindow();
             optionsPanel.SetActive(false);
 
-            StartCoroutine(ShowDonRequest());
+            // Only show Don's request the first time during request phase
+            if (narrativeManager.requestPending)
+            {
+                StartCoroutine(ShowDonRequest());
+            }
         }
 
         IEnumerator ShowDonRequest()
@@ -307,18 +336,23 @@ namespace Hunger.UI
                 "Don wants: " + request.currentRequest
             ));
 
-            // This is where your one fade will go later
-            
+            narrativeManager.requestPending = false;
         }
 
         public void GoToLeaveDoor()
         {
-            // BLOCK during morning
+            if (narrativeManager.requestPending)
+            {
+                ShowDialogue("I should see what Don wants first.");
+                return;
+            }
+
             if (isMorningPhase)
             {
                 ShowDialogue("I can't go outside yet.");
                 return;
             }
+
             cameraSwitcher.GoToLeaveDoor();
             optionsPanel.SetActive(false);
             journal.SetActive(false);
@@ -327,7 +361,6 @@ namespace Hunger.UI
 
         // --- UI TEXT FUNCTIONS ---
 
-        // Don's request
         public void UpdateRequest(string request)
         {
             requestText.text = "Don Wants: " + request;
@@ -336,15 +369,12 @@ namespace Hunger.UI
         public void ShowDialogue(string text)
         {
             dialogueText.text = text;
-
-            //StopAllCoroutines(); 
             StartCoroutine(ClearDialogueAfterTime());
         }
 
         IEnumerator ClearDialogueAfterTime()
         {
             yield return new WaitForSeconds(3f);
-
             dialogueText.text = "";
         }
 
@@ -354,13 +384,11 @@ namespace Hunger.UI
             sacrificePanel.SetActive(true);
             Cursor.visible = true;
 
-            // Clear old buttons
             foreach (Transform child in sacrificeButtonContainer)
             {
                 Destroy(child.gameObject);
             }
 
-            // Create new buttons
             foreach (ItemData item in items)
             {
                 GameObject btn = Instantiate(sacrificeButtonPrefab, sacrificeButtonContainer);

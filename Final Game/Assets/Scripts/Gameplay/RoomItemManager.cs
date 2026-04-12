@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Hunger.Gameplay
@@ -9,6 +8,7 @@ namespace Hunger.Gameplay
         public int itemsToActivate = 2;
 
         private ExplorationSystem explorationSystem;
+        private int itemsDiscoveredThisVisit = 0;
 
         private void Start()
         {
@@ -17,47 +17,60 @@ namespace Hunger.Gameplay
 
         public void GenerateRoomItems()
         {
-            // Turn everything off first
+            itemsDiscoveredThisVisit = 0;
+
             foreach (GameObject item in roomItems)
             {
-                item.SetActive(false);
-            }
+                InteractableItem interactable = item.GetComponent<InteractableItem>();
 
-            // Build valid item pool (NOT consumed)
-            List<GameObject> validItems = new List<GameObject>();
+                if (interactable == null)
+                    continue;
 
-            foreach (GameObject obj in roomItems)
-            {
-                InteractableItem interactable = obj.GetComponent<InteractableItem>();
-
-                if (!explorationSystem.consumedItems.Contains(interactable.item))
+                if (explorationSystem.consumedItems.Contains(interactable.item))
                 {
-                    validItems.Add(obj);
+                    item.SetActive(false); // sacrificed forever
+                }
+                else
+                {
+                    item.SetActive(true);
+                    interactable.SetAvailableForToday(true); // all visible, black, clickable
+                    interactable.SetRoomManager(this); // let item report back when clicked
                 }
             }
+        }
 
-            // Prevent errors if pool is small
-            int spawnCount = Mathf.Min(itemsToActivate, validItems.Count);
-
-            List<int> usedIndexes = new List<int>();
-
-            for (int i = 0; i < spawnCount; i++)
+        public void ResetAllRoomItemsForNewDay()
+        {
+            foreach (GameObject item in roomItems)
             {
-                int rand;
+                if (item == null)
+                    continue;
 
-                do
+                InteractableItem interactable = item.GetComponent<InteractableItem>();
+
+                if (interactable == null)
+                    continue;
+
+                if (explorationSystem.consumedItems.Contains(interactable.item))
                 {
-                    rand = Random.Range(0, validItems.Count);
-                } while (usedIndexes.Contains(rand));
-
-                usedIndexes.Add(rand);
-
-                GameObject selected = validItems[rand];
-                selected.SetActive(true);
-
-                // Reset click state each day
-                selected.GetComponent<InteractableItem>().ResetItem();
+                    item.SetActive(false); // still gone forever
+                }
+                else
+                {
+                    item.SetActive(true);
+                    interactable.ResetItem();
+                }
             }
+        }
+
+        public bool CanDiscoverMoreItems()
+        {
+            return itemsDiscoveredThisVisit < itemsToActivate;
+        }
+
+        public void RegisterItemDiscovery()
+        {
+            itemsDiscoveredThisVisit++;
         }
     }
 }

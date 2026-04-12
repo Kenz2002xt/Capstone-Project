@@ -5,30 +5,32 @@ namespace Hunger.Data
     [System.Serializable]
     public class GameEvent
     {
-        [Header("Intro Text")]
-        [TextArea]
+        [Header("Main Event Text")]
+        [TextArea(3, 6)]
         public string description;
 
-        [Header("Optional Follow-Up Text")]
-        [TextArea]
+        [Header("Optional Extra Feedback")]
+        [TextArea(2, 4)]
         public string resultHint;
 
-        [Header("Item Spawn Change")]
-        public int itemModifier; // -1, 0, +1
+        [Header("Day Rules")]
+        public bool dayOneOnly = false;
+        public bool isPositive = false;
 
-        [Header("Direct Stat Effect")]
-        public string affectedStat; // "Home", "Family", "Self", or empty
-        public int statChange;
+        [Header("Direct Category Effect")]
+        public string affectedStat;   // "Home", "Family", "Self", or empty
+        public int statChange;        // Example: -10 or +10
 
-        [Header("Sacrifice Pressure")]
-        public string weightedStat; // "Home", "Family", "Self", or empty
-        public int weightModifier;  // example: +3 or +5 extra sacrifice pain
+        [Header("Needed Item Check (Optional)")]
+        public string neededItemName; // Example: "Medication"
 
-        // BONUS ITEM
-        [Header("Bonus Sacrifice Item (Optional)")]
+        [TextArea(2, 4)]
+        public string hasItemText;
+
+        [TextArea(2, 4)]
+        public string missingItemText;
+
+        [Header("Optional Bonus Sacrifice Item")]
         public ItemData bonusItem;
-
-        [Header("Event Tone")]
-        public bool isPositive;
     }
 }

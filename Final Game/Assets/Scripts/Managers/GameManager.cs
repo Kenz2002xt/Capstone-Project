@@ -2,6 +2,7 @@ using Hunger.Gameplay;
 using Hunger.Systems;
 using Hunger.UI;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Hunger.Managers
 {
@@ -42,6 +43,10 @@ namespace Hunger.Managers
 
             // --- RESET EXPLORATION ---
             explorationSystem.ResetDay();
+            uiManager.kitchenRoomManager.ResetAllRoomItemsForNewDay();
+            uiManager.sisterRoomManager.ResetAllRoomItemsForNewDay();
+            uiManager.parentRoomManager.ResetAllRoomItemsForNewDay();
+            uiManager.bathroomManager.ResetAllRoomItemsForNewDay();
 
             // --- UPDATE UI TEXT ---
             uiManager.UpdateDay(currentDay);
@@ -57,7 +62,7 @@ namespace Hunger.Managers
             if (statSystem.IsDead())
             {
                 // If player is dead then show Game Lost on the UI
-                uiManager.ShowEnd("Game Lost");
+                SceneManager.LoadScene("GameOverScene");
                 Debug.Log("You did not survive winter");
                 return;
             }
@@ -69,7 +74,7 @@ namespace Hunger.Managers
             if (currentDay > maxDays)
             {
                 // Show Game Won message on UI
-                uiManager.ShowEnd("Game Won");
+                SceneManager.LoadScene("WinScene");
                 Debug.Log("You survived until spring");
                 return;
             }

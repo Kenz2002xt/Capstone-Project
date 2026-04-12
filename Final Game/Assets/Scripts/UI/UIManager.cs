@@ -11,6 +11,15 @@ namespace Hunger.UI
 {
     public class UIManager : MonoBehaviour
     {
+        [Header("Day 1 Instruction UI")]
+        public GameObject dayOneInstructionPanel;
+        public TextMeshProUGUI dayOneInstructionText;
+
+        private bool journalOpenedToday = false;
+        private bool dayOneRoomHintShown = false;
+        private bool dayOneSearchHintShown = false;
+        private bool dayOneBarnHintShown = false;
+
         // References to UI text elements in the Canvas
         public TextMeshProUGUI requestText;
         public TextMeshProUGUI dialogueText;
@@ -48,17 +57,37 @@ namespace Hunger.UI
         // Camera system
         public CameraSwitcher cameraSwitcher;
 
+        // Audi
+        public AudioSource morningAudio;
+        public AudioSource nightAudio;
+        public AudioSource breathingAudio;
+
+        // Lighting
+        public Light sunlight;
+
         void Start()
         {
             optionsPanel.SetActive(false);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
+            if (sunlight != null)
+                sunlight.enabled = true; // START ON
+
+            if (dayOneInstructionPanel != null)
+                dayOneInstructionPanel.SetActive(false);
+
         }
 
         // JOURNAL BUTTON
         public void OpenJournal()
         {
             optionsPanel.SetActive(true);
+
+            if (IsDayOne())
+            {
+                journalOpenedToday = true;
+            }
         }
 
         // CLOSE BUTTON
@@ -74,6 +103,49 @@ namespace Hunger.UI
             visitedParents = false;
             visitedSister = false;
             visitedSelf = false;
+            morningAudio?.Play();
+
+            if (IsDayOne())
+            {
+                journalOpenedToday = false;
+                dayOneRoomHintShown = false;
+                dayOneSearchHintShown = false;
+                dayOneBarnHintShown = false;
+            }
+        }
+
+        bool IsDayOne()
+        {
+            GameManager gm = FindFirstObjectByType<GameManager>();
+            return gm != null && gm.currentDay == 1;
+        }
+
+        public void ShowDayOneInstruction(string message)
+        {
+            if (!IsDayOne())
+                return;
+
+            if (dayOneInstructionPanel != null)
+                dayOneInstructionPanel.SetActive(true);
+
+            if (dayOneInstructionText != null)
+                dayOneInstructionText.text = message;
+        }
+
+        public IEnumerator ShowDayOneJournalReminder()
+        {
+            yield return new WaitForSeconds(6f);
+
+            if (IsDayOne() && isMorningPhase && !journalOpenedToday)
+            {
+                ShowDayOneInstruction("Click your journal.");
+            }
+        }
+
+        public void HideDayOneInstruction()
+        {
+            if (dayOneInstructionPanel != null)
+                dayOneInstructionPanel.SetActive(false);
         }
 
         MorningDialogueData GetDialogueForDay(List<MorningDialogueData> dialogueList)
@@ -148,6 +220,12 @@ namespace Hunger.UI
             cameraSwitcher.GoToSisterRoom();
             sisterRoomManager.GenerateRoomItems();
             optionsPanel.SetActive(false);
+
+            if (IsDayOne() && !dayOneSearchHintShown)
+            {
+                ShowDayOneInstruction("Click a few items to inspect them for sacrifice.");
+                dayOneSearchHintShown = true;
+            }
         }
 
         IEnumerator SisterMorningRoutine()
@@ -161,10 +239,10 @@ namespace Hunger.UI
 
             yield return StartCoroutine(PlayMorningDialogue(
                 data,
-                () => stats.familyStat += 5,
-                () => stats.familyStat -= 5,
-                () => stats.familyStat += 5,
-                () => stats.familyStat -= 5
+                () => stats.familyStat += 0,
+                () => stats.familyStat -= 0,
+                () => stats.familyStat += 0,
+                () => stats.familyStat -= 0
             ));
 
             nm.RegisterMorningInteraction();
@@ -190,6 +268,7 @@ namespace Hunger.UI
                 StartCoroutine(ParentsMorningRoutine());
                 optionsPanel.SetActive(false);
                 return;
+
             }
 
             // NORMAL GAMEPLAY
@@ -203,6 +282,12 @@ namespace Hunger.UI
             explorationSystem.RoomExplored();
             parentRoomManager.GenerateRoomItems();
             optionsPanel.SetActive(false);
+
+            if (IsDayOne() && !dayOneSearchHintShown)
+            {
+                ShowDayOneInstruction("Click a few items to inspect them for sacrifice.");
+                dayOneSearchHintShown = true;
+            }
         }
 
         IEnumerator ParentsMorningRoutine()
@@ -216,10 +301,10 @@ namespace Hunger.UI
 
             yield return StartCoroutine(PlayMorningDialogue(
                 data,
-                () => stats.homeStat += 5,
-                () => stats.homeStat -= 5,
-                () => stats.homeStat += 5,
-                () => stats.homeStat -= 5
+                () => stats.homeStat += 0,
+                () => stats.homeStat -= 0,
+                () => stats.homeStat += 0,
+                () => stats.homeStat -= 0
             ));
 
             nm.RegisterMorningInteraction();
@@ -249,6 +334,12 @@ namespace Hunger.UI
             cameraSwitcher.GoToKitchen();
             kitchenRoomManager.GenerateRoomItems();
             optionsPanel.SetActive(false);
+
+            if (IsDayOne() && !dayOneSearchHintShown)
+            {
+                ShowDayOneInstruction("Click a few items to inspect them for sacrifice.");
+                dayOneSearchHintShown = true;
+            }
         }
 
         public void GoToBathroom()
@@ -286,6 +377,12 @@ namespace Hunger.UI
             cameraSwitcher.GoToBathroom();
             bathroomManager.GenerateRoomItems();
             optionsPanel.SetActive(false);
+
+            if (IsDayOne() && !dayOneSearchHintShown)
+            {
+                ShowDayOneInstruction("Click a few items to inspect them for sacrifice.");
+                dayOneSearchHintShown = true;
+            }
         }
 
         IEnumerator SelfMorningRoutine()
@@ -297,12 +394,14 @@ namespace Hunger.UI
 
             MorningDialogueData data = GetDialogueForDay(selfMorningDialogues);
 
+            breathingAudio?.Play();
+
             yield return StartCoroutine(PlayMorningDialogue(
                 data,
-                () => stats.selfStat += 5,
-                () => stats.selfStat -= 5,
-                () => stats.selfStat += 5,
-                () => stats.selfStat -= 5
+                () => stats.selfStat += 0,
+                () => stats.selfStat -= 0,
+                () => stats.selfStat += 0,
+                () => stats.selfStat -= 0
             ));
 
             nm.RegisterMorningInteraction();
@@ -317,6 +416,7 @@ namespace Hunger.UI
                 return;
             }
 
+            morningAudio?.Stop();
             cameraSwitcher.LookOutWindow();
             optionsPanel.SetActive(false);
 
@@ -336,7 +436,18 @@ namespace Hunger.UI
                 "Don wants: " + request.currentRequest
             ));
 
+            nightAudio?.Play();
+
             narrativeManager.requestPending = false;
+
+            // TURN OFF 
+            if (sunlight != null)
+                sunlight.enabled = false;
+
+            if (IsDayOne())
+            {
+                ShowDayOneInstruction("Pick two rooms to search today.");
+            }
         }
 
         public void GoToLeaveDoor()
@@ -383,6 +494,7 @@ namespace Hunger.UI
         {
             sacrificePanel.SetActive(true);
             Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
 
             foreach (Transform child in sacrificeButtonContainer)
             {
@@ -391,6 +503,9 @@ namespace Hunger.UI
 
             foreach (ItemData item in items)
             {
+                if (item == null || string.IsNullOrWhiteSpace(item.itemName))
+                    continue;
+
                 GameObject btn = Instantiate(sacrificeButtonPrefab, sacrificeButtonContainer);
 
                 btn.GetComponentInChildren<TextMeshProUGUI>().text = item.itemName;
@@ -410,6 +525,7 @@ namespace Hunger.UI
         public void UpdateDay(int currentDay)
         {
             dayText.text = "Day: " + currentDay + "/10";
+            nightAudio?.Stop();
         }
 
         public void ShowEnd(string result)

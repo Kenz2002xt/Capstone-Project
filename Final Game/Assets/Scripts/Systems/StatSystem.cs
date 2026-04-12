@@ -18,6 +18,13 @@ namespace Hunger.Systems
         public CharacterAnimationController fatherController;
         public CharacterAnimationController sisterController;
 
+        [Header("Audio")]
+        public AudioSource music;
+
+        private float currentPitch = 0.9f;
+        private float pitchStep = 0.05f;
+        private float minPitch = 0.4f;
+
         void Start()
         {
             if (directionalLight != null)
@@ -26,25 +33,38 @@ namespace Hunger.Systems
                 baseIntensity = directionalLight.intensity;
             }
 
+            if (music != null)
+            {
+                music.pitch = currentPitch;
+            }
+
             UpdateAnimations(); // IMPORTANT: sets idle at game start
         }
 
         public void ReduceStat(string categoryTag, int amount)
         {
+            Debug.Log("ReduceStat called with tag: " + categoryTag + " amount: " + amount);
+
             if (categoryTag == "Home")
             {
                 homeStat -= amount;
-                ApplyColdTint();
+                ApplyRedTint();
+                ApplyIntense();
+                LowerMusicPitch();
             }
             else if (categoryTag == "Self")
             {
                 selfStat -= amount;
-                ApplyDarkness();
+                ApplyIntense();
+                ApplyRedTint();
+                LowerMusicPitch();
             }
             else if (categoryTag == "Family")
             {
                 familyStat -= amount;
-                ApplyWarmthLoss();
+                ApplyIntense();
+                ApplyRedTint();
+                LowerMusicPitch();
             }
 
             ClampStats();
@@ -80,22 +100,31 @@ namespace Hunger.Systems
             Debug.Log("Animation StateLevel set to: " + stateValue);
         }
 
-        void ApplyColdTint()
+        void ApplyRedTint()
         {
             if (directionalLight != null)
-                directionalLight.color = Color.Lerp(directionalLight.color, Color.blue, 0.6f);
+                directionalLight.color = Color.Lerp(directionalLight.color, Color.red, 0.1f);
         }
 
-        void ApplyDarkness()
+        void ApplyIntense()
         {
             if (directionalLight != null)
-                directionalLight.intensity = Mathf.Max(0, directionalLight.intensity - 0.8f);
+                directionalLight.intensity = Mathf.Max(0, directionalLight.intensity + 0.2f);
         }
 
-        void ApplyWarmthLoss()
+        void LowerMusicPitch()
         {
-            if (directionalLight != null)
-                directionalLight.color = Color.Lerp(directionalLight.color, Color.white, 0.8f);
+            if (music == null)
+                return;
+
+            currentPitch -= pitchStep;
+
+            // Clamp so it never goes below 0.4
+            currentPitch = Mathf.Max(currentPitch, minPitch);
+
+            music.pitch = currentPitch;
+
+            Debug.Log("Music pitch: " + currentPitch);
         }
 
         public bool IsDead()

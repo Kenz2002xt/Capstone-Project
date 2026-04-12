@@ -17,11 +17,16 @@ namespace Hunger.Gameplay
         // Called when player reaches the barn
         public void OpenSacrificeMenu()
         {
+            // Remove any broken/null entries first
+            explorationSystem.discoveredItems.RemoveAll(item =>
+                item == null || string.IsNullOrWhiteSpace(item.itemName));
+
             List<ItemData> items = explorationSystem.discoveredItems;
 
             if (items.Count == 0)
             {
-                uiManager.ShowDialogue("You have nothing to offer...");
+                uiManager.HideSacrificeOptions();
+                StartCoroutine(HandleNoSacrifice());
                 return;
             }
 
@@ -46,13 +51,13 @@ namespace Hunger.Gameplay
             }
 
             // Calculate value
-            int finalValue = item.value + item.sacrificeWeight;
+            int finalValue = item.value;
 
             string matchResultText = "";
 
             if (!matchesRequest)
             {
-                finalValue += 8; // penalty
+                finalValue += 10; // penalty
                 matchResultText = "That didn’t seem to help...";
             }
             else
@@ -93,6 +98,27 @@ namespace Hunger.Gameplay
 
             // run coroutine instead of ending day immediately
             StartCoroutine(HandleEndOfDay(consequenceText));
+        }
+
+        IEnumerator HandleNoSacrifice()
+        {
+            NarrativeUI narrativeUI = FindFirstObjectByType<NarrativeUI>();
+
+            string consequenceText =
+                "I come to the barn with nothing.\n\n" +
+                "Don says nothing, but I can feel the disappointment settle into the walls.\n\n" +
+                "By the time I get back inside, everything feels a little worse.";
+
+            // harsher penalty than a normal sacrifice
+            statSystem.ReduceStat("Home", 20);
+            statSystem.ReduceStat("Family", 20);
+            statSystem.ReduceStat("Self", 20);
+
+            yield return StartCoroutine(
+                narrativeUI.ShowConsequenceRoutine(consequenceText)
+            );
+
+            FindFirstObjectByType<GameManager>().EndDay();
         }
 
         // controls proper end-of-day flow

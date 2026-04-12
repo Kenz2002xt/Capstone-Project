@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Hunger.Data;
 using Hunger.UI;
+using Hunger.Managers;
 
 namespace Hunger.Gameplay
 {
@@ -55,6 +56,14 @@ namespace Hunger.Gameplay
                 uiManager.ShowDialogue(line);
 
                 Debug.Log("Discovered: " + item.itemName);
+
+                GameManager gm = FindFirstObjectByType<GameManager>();
+                UIManager ui = FindFirstObjectByType<UIManager>();
+
+                if (gm != null && ui != null && gm.currentDay == 1 && discoveredItems.Count >= 4)
+                {
+                    ui.ShowDayOneInstruction("Head to the barn through the porch.");
+                }
             }
         }
     }

@@ -4,7 +4,6 @@ using UnityEngine;
 using Hunger.UI;
 using Hunger.Data;
 using Hunger.Systems;
-using Hunger.Managers;
 using Hunger.Gameplay;
 
 namespace Hunger.Managers
@@ -20,12 +19,18 @@ namespace Hunger.Managers
         public RoomItemManager roomItemManager;
         public GameManager gameManager;
 
-        private int negativeStreak = 0;
         private bool morningFinished = false;
         public bool isMorning = false;
         private int morningInteractions = 0;
 
         public bool requestPending = false;
+
+        private GameEvent lastEvent = null;
+        private int negativeStreak = 0;
+        private string lastAffectedStat = "";
+        private int sameStatStreak = 0;
+
+        private List<GameEvent> usedEvents = new List<GameEvent>();
 
         public void StartDayFlow(int day)
         {
@@ -34,7 +39,20 @@ namespace Hunger.Managers
 
         IEnumerator RunDay(int day)
         {
-            GameEvent e = GetRandomEvent();
+            GameEvent e = GetEventForDay(day);
+
+            // UI reference
+            UIManager ui = FindFirstObjectByType<UIManager>();
+
+            // SUNLIGHT ON AT START OF DAY
+            if (ui != null && ui.sunlight != null)
+                ui.sunlight.enabled = true;
+
+            // Hide Day 1 instruction panel on later days
+            if (ui != null && day != 1)
+            {
+                ui.HideDayOneInstruction();
+            }
 
             string eventText = "December " + day + "...\n\n" + e.description;
 
@@ -52,6 +70,13 @@ namespace Hunger.Managers
             morningFinished = false;
             EnableMorning();
 
+            // Day 1 instruction setup
+            if (day == 1 && ui != null)
+            {
+                ui.ShowDayOneInstruction("Check on your family in their rooms. Check on yourself in the bathroom as well.");
+                StartCoroutine(ui.ShowDayOneJournalReminder());
+            }
+
             yield return new WaitUntil(() => morningFinished);
 
             requestSystem.GenerateRequest();
@@ -64,8 +89,11 @@ namespace Hunger.Managers
             morningInteractions = 0;
 
             UIManager ui = FindFirstObjectByType<UIManager>();
-            ui.isMorningPhase = true;
-            ui.ResetMorningVisits();
+            if (ui != null)
+            {
+                ui.isMorningPhase = true;
+                ui.ResetMorningVisits();
+            }
         }
 
         public void RegisterMorningInteraction()
@@ -80,59 +108,197 @@ namespace Hunger.Managers
 
         public void FinishMorning()
         {
-            FindFirstObjectByType<UIManager>().isMorningPhase = false;
+            UIManager ui = FindFirstObjectByType<UIManager>();
+           
+            if (ui != null)
+            {
+                ui.isMorningPhase = false;
+            }
+
             isMorning = false;
             morningFinished = true;
             requestPending = true;
 
-            FindFirstObjectByType<UIManager>().ShowDialogue("I should see what Don wants.");
+            if (gameManager.currentDay == 1 && ui != null)
+            {
+                ui.ShowDayOneInstruction("Head to the window.");
+            }
+            else if (ui != null)
+            {
+                ui.ShowDialogue("I should see what Don wants.");
+            }
         }
 
-        GameEvent GetRandomEvent()
+        GameEvent GetEventForDay(int day)
         {
-            List<GameEvent> pool = new List<GameEvent>();
-
-            if (negativeStreak >= 2)
+            // Day 1 always uses the special intro/tutorial-style event
+            if (day == 1)
             {
-                foreach (var e in events)
+                foreach (GameEvent e in events)
                 {
-                    if (e.isPositive)
-                        pool.Add(e);
+                    if (e.dayOneOnly)
+                        return e;
                 }
             }
-            else
+
+            List<GameEvent> pool = new List<GameEvent>();
+
+            foreach (GameEvent e in events)
             {
-                pool = events;
+                if (!e.dayOneOnly && !usedEvents.Contains(e))
+                {
+                    pool.Add(e);
+                }
+            }
+
+            // If too many negative events in a row, force a positive one
+            if (negativeStreak >= 3)
+            {
+                List<GameEvent> positivePool = pool.FindAll(e => e.isPositive);
+
+                if (positivePool.Count > 0)
+                {
+                    pool = positivePool;
+                }
+            }
+
+            // If too many of the same affected stat in a row, force a different one
+            if (sameStatStreak >= 2 && !string.IsNullOrWhiteSpace(lastAffectedStat))
+            {
+                List<GameEvent> differentStatPool = pool.FindAll(e => e.affectedStat != lastAffectedStat);
+
+                if (differentStatPool.Count > 0)
+                {
+                    pool = differentStatPool;
+                }
+            }
+
+            if (pool.Count == 0)
+            {
+                Debug.LogWarning("No valid unused events left after filtering. Falling back to any unused non-day-one event.");
+
+                foreach (GameEvent e in events)
+                {
+                    if (!e.dayOneOnly && !usedEvents.Contains(e))
+                    {
+                        pool.Add(e);
+                    }
+                }
+            }
+
+            if (pool.Count == 0)
+            {
+                Debug.LogWarning("All events have been used. Falling back to any non-day-one event.");
+
+                foreach (GameEvent e in events)
+                {
+                    if (!e.dayOneOnly)
+                    {
+                        pool.Add(e);
+                    }
+                }
             }
 
             GameEvent chosen = pool[Random.Range(0, pool.Count)];
 
-            if (chosen.isPositive) negativeStreak = 0;
-            else negativeStreak++;
+            // Track used events so they don't repeat this run
+            if (!usedEvents.Contains(chosen))
+            {
+                usedEvents.Add(chosen);
+            }
+
+            // Track positivity streak
+            if (chosen.isPositive)
+                negativeStreak = 0;
+            else
+                negativeStreak++;
+
+            // Track same-stat streak
+            if (!string.IsNullOrWhiteSpace(chosen.affectedStat) && chosen.affectedStat == lastAffectedStat)
+                sameStatStreak++;
+            else
+                sameStatStreak = 1;
+
+            lastAffectedStat = chosen.affectedStat;
+            lastEvent = chosen;
 
             return chosen;
         }
 
         void ApplyEvent(GameEvent e)
         {
-            roomItemManager.itemsToActivate += e.itemModifier;
+            ExplorationSystem exploration = FindFirstObjectByType<ExplorationSystem>();
 
-            if (e.affectedStat == "Home")
-                statSystem.homeStat += e.statChange;
-
-            if (e.affectedStat == "Family")
-                statSystem.familyStat += e.statChange;
-
-            if (e.affectedStat == "Self")
-                statSystem.selfStat += e.statChange;
-
-            // BONUS ITEM
-            if (e.bonusItem != null)
+            // --- NEEDED ITEM CHECK ---
+            if (!string.IsNullOrWhiteSpace(e.neededItemName) && exploration != null)
             {
-                FindFirstObjectByType<ExplorationSystem>().discoveredItems.Add(e.bonusItem);
+                bool hasNeededItem = true;
 
+                foreach (ItemData consumed in exploration.consumedItems)
+                {
+                    if (consumed != null && consumed.itemName == e.neededItemName)
+                    {
+                        hasNeededItem = false;
+                        break;
+                    }
+                }
+
+                if (hasNeededItem)
+                {
+                    if (!string.IsNullOrEmpty(e.hasItemText))
+                    {
+                        FindFirstObjectByType<UIManager>().ShowDialogue(e.hasItemText);
+                    }
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(e.missingItemText))
+                    {
+                        FindFirstObjectByType<UIManager>().ShowDialogue(e.missingItemText);
+                    }
+
+                    // Only apply penalty if item is missing
+                    ApplyStatChange(e.affectedStat, e.statChange);
+                }
+            }
+            else
+            {
+                // Normal event without needed item check
+                ApplyStatChange(e.affectedStat, e.statChange);
+            }
+
+            // --- BONUS ITEM ---
+            if (e.bonusItem != null && !string.IsNullOrWhiteSpace(e.bonusItem.itemName) && exploration != null)
+            {
+                exploration.discoveredItems.Add(e.bonusItem);
                 Debug.Log("Bonus item added: " + e.bonusItem.itemName);
             }
+        }
+
+        void ApplyStatChange(string statName, int amount)
+        {
+            if (string.IsNullOrWhiteSpace(statName) || amount == 0)
+                return;
+
+            if (statName == "Home")
+            {
+                statSystem.homeStat += amount;
+            }
+            else if (statName == "Family")
+            {
+                statSystem.familyStat += amount;
+            }
+            else if (statName == "Self")
+            {
+                statSystem.selfStat += amount;
+            }
+
+            statSystem.homeStat = Mathf.Clamp(statSystem.homeStat, 0, 100);
+            statSystem.familyStat = Mathf.Clamp(statSystem.familyStat, 0, 100);
+            statSystem.selfStat = Mathf.Clamp(statSystem.selfStat, 0, 100);
+
+            Debug.Log("Event stat change applied: " + statName + " " + amount);
+            Debug.Log("Home: " + statSystem.homeStat + " | Family: " + statSystem.familyStat + " | Self: " + statSystem.selfStat);
         }
     }
 }

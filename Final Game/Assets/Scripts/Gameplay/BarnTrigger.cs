@@ -15,6 +15,10 @@ namespace Hunger.Gameplay
                 // Snap to barn camera
                 cameraSwitcher.GoToBarn();
 
+                // Force cursor on for UI
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+
                 // Open sacrifice UI
                 sacrificeSystem.OpenSacrificeMenu();
             }

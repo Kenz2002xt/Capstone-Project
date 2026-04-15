@@ -30,6 +30,9 @@ namespace Hunger.Data
         [TextArea(2, 4)]
         public string missingItemText;
 
+        [Header("Random Item Loss")]
+        public int randomItemsToRemove; // 0 = none
+
         [Header("Optional Bonus Sacrifice Item")]
         public ItemData bonusItem;
     }

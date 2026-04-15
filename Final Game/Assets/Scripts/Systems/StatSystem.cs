@@ -1,3 +1,4 @@
+using Hunger.UI;
 using UnityEngine;
 
 namespace Hunger.Systems
@@ -39,6 +40,7 @@ namespace Hunger.Systems
             }
 
             UpdateAnimations(); // IMPORTANT: sets idle at game start
+            FindFirstObjectByType<UIManager>().UpdateStatSliders(homeStat, selfStat, familyStat);
         }
 
         public void ReduceStat(string categoryTag, int amount)
@@ -69,6 +71,8 @@ namespace Hunger.Systems
 
             ClampStats();
             UpdateAnimations();
+
+            FindFirstObjectByType<UIManager>().UpdateStatSliders(homeStat, selfStat, familyStat);
 
             Debug.Log($"Home: {homeStat} | Self: {selfStat} | Family: {familyStat}");
         }

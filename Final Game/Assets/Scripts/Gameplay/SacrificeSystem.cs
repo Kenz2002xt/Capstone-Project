@@ -125,11 +125,16 @@ namespace Hunger.Gameplay
         IEnumerator HandleEndOfDay(string consequenceText)
         {
             NarrativeUI narrativeUI = FindFirstObjectByType<NarrativeUI>();
+            FindFirstObjectByType<UIBackgroundController>().SetConsequence();
+
+            narrativeUI.SetTextSize(60f);
 
             // Show consequence text and WAIT for it to finish
             yield return StartCoroutine(
                narrativeUI.ShowConsequenceRoutine(consequenceText, true)
             );
+
+            narrativeUI.ResetTextSize();
 
             // Now safely move to next day
             FindFirstObjectByType<GameManager>().EndDay();

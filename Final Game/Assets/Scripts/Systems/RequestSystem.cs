@@ -53,12 +53,12 @@ namespace Hunger.Systems
             }
             else if (currentDay <= 6)
             {
-                pool.AddRange(earlyRequests);
+                //pool.AddRange(earlyRequests);
                 pool.AddRange(midRequests);
             }
             else
             {
-                pool.AddRange(earlyRequests);
+                //pool.AddRange(earlyRequests);
                 pool.AddRange(midRequests);
                 pool.AddRange(lateRequests);
             }
@@ -84,7 +84,7 @@ namespace Hunger.Systems
             usedRequests.Add(currentRequest);
 
             // UPDATE UI
-            FindFirstObjectByType<UIManager>().UpdateRequest(currentRequest);
+            //FindFirstObjectByType<UIManager>().UpdateRequest(currentRequest);
             Debug.Log("Don asks for: " + currentRequest);
         }
     }

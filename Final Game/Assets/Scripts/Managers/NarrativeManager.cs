@@ -41,7 +41,6 @@ namespace Hunger.Managers
         {
             GameEvent e = GetEventForDay(day);
 
-            // UI reference
             UIManager ui = FindFirstObjectByType<UIManager>();
 
             // SUNLIGHT ON AT START OF DAY
@@ -54,6 +53,9 @@ namespace Hunger.Managers
                 ui.HideDayOneInstruction();
             }
 
+            // Apply event AND get any extra text from item checks
+            string extraEventText = ApplyEventAndGetExtraText(e);
+
             string eventText = "December " + day + "...\n\n" + e.description;
 
             if (!string.IsNullOrEmpty(e.resultHint))
@@ -61,10 +63,13 @@ namespace Hunger.Managers
                 eventText += "\n\n" + e.resultHint;
             }
 
+            if (!string.IsNullOrEmpty(extraEventText))
+            {
+                eventText += "\n\n" + extraEventText;
+            }
+
             FindFirstObjectByType<UIBackgroundController>().SetDay();
             yield return StartCoroutine(narrativeUI.ShowTextRoutine(eventText));
-
-            ApplyEvent(e);
 
             // --- MORNING ---
             morningFinished = false;
@@ -152,7 +157,7 @@ namespace Hunger.Managers
             }
 
             // If too many negative events in a row, force a positive one
-            if (negativeStreak >= 3)
+            if (negativeStreak >= 5)
             {
                 List<GameEvent> positivePool = pool.FindAll(e => e.isPositive);
 
@@ -225,9 +230,10 @@ namespace Hunger.Managers
             return chosen;
         }
 
-        void ApplyEvent(GameEvent e)
+        string ApplyEventAndGetExtraText(GameEvent e)
         {
             ExplorationSystem exploration = FindFirstObjectByType<ExplorationSystem>();
+            string extraText = "";
 
             // --- NEEDED ITEM CHECK ---
             if (!string.IsNullOrWhiteSpace(e.neededItemName) && exploration != null)
@@ -247,14 +253,14 @@ namespace Hunger.Managers
                 {
                     if (!string.IsNullOrEmpty(e.hasItemText))
                     {
-                        FindFirstObjectByType<UIManager>().ShowDialogue(e.hasItemText);
+                        extraText = e.hasItemText;
                     }
                 }
                 else
                 {
                     if (!string.IsNullOrEmpty(e.missingItemText))
                     {
-                        FindFirstObjectByType<UIManager>().ShowDialogue(e.missingItemText);
+                        extraText = e.missingItemText;
                     }
 
                     // Only apply penalty if item is missing
@@ -267,11 +273,70 @@ namespace Hunger.Managers
                 ApplyStatChange(e.affectedStat, e.statChange);
             }
 
+            // --- RANDOM ITEM LOSS ---
+            if (e.randomItemsToRemove > 0)
+            {
+                RemoveRandomItems(e.randomItemsToRemove);
+            }
+
             // --- BONUS ITEM ---
             if (e.bonusItem != null && !string.IsNullOrWhiteSpace(e.bonusItem.itemName) && exploration != null)
             {
                 exploration.discoveredItems.Add(e.bonusItem);
                 Debug.Log("Bonus item added: " + e.bonusItem.itemName);
+            }
+
+            return extraText;
+        }
+
+        void RemoveRandomItems(int count)
+        {
+            ExplorationSystem exploration = FindFirstObjectByType<ExplorationSystem>();
+
+            if (exploration == null || count <= 0)
+                return;
+
+            List<ItemData> removableItems = new List<ItemData>();
+
+            RoomItemManager[] roomManagers = FindObjectsByType<RoomItemManager>(FindObjectsSortMode.None);
+
+            foreach (RoomItemManager room in roomManagers)
+            {
+                if (room.roomItems == null)
+                    continue;
+
+                foreach (GameObject obj in room.roomItems)
+                {
+                    if (obj == null)
+                        continue;
+
+                    InteractableItem interactable = obj.GetComponent<InteractableItem>();
+
+                    if (interactable == null || interactable.item == null)
+                        continue;
+
+                    ItemData item = interactable.item;
+
+                    if (!exploration.consumedItems.Contains(item) &&
+                        !exploration.discoveredItems.Contains(item) &&
+                        !removableItems.Contains(item))
+                    {
+                        removableItems.Add(item);
+                    }
+                }
+            }
+
+            int removeCount = Mathf.Min(count, removableItems.Count);
+
+            for (int i = 0; i < removeCount; i++)
+            {
+                int rand = Random.Range(0, removableItems.Count);
+                ItemData removed = removableItems[rand];
+
+                exploration.consumedItems.Add(removed);
+                removableItems.RemoveAt(rand);
+
+                Debug.Log("Event removed item: " + removed.itemName);
             }
         }
 

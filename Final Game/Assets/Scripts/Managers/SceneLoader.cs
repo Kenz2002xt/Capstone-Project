@@ -17,7 +17,7 @@ namespace Hunger.Managers
 
         public void OpenCredits()
         {
-            SceneManager.LoadScene("CreditsScene");
+            SceneManager.LoadScene("Credits");
         }
 
         public void OpenMainMenu()
@@ -25,9 +25,19 @@ namespace Hunger.Managers
             SceneManager.LoadScene("MainMenuScene");
         }
 
-        public void OpenWin()
+        public void OpenWin1()
         {
-            SceneManager.LoadScene("WinScene");
+            SceneManager.LoadScene("WinScene1");
+        }
+
+        public void OpenWin2()
+        {
+            SceneManager.LoadScene("WinScene2");
+        }
+
+        public void OpenWin3()
+        {
+            SceneManager.LoadScene("WinScene3");
         }
 
         public void OpenGameOver()

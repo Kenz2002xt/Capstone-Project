@@ -6,6 +6,7 @@ using Hunger.Gameplay;
 using Hunger.Data;
 using Hunger.Managers;
 using Hunger.Systems;
+using UnityEngine.UI;
 
 namespace Hunger.UI
 {
@@ -29,6 +30,15 @@ namespace Hunger.UI
         // Journal UI
         public GameObject optionsPanel;
         public GameObject journal;
+        public Slider homeSlider;
+        public Slider selfSlider;
+        public Slider familySlider;
+        public Button parentsButton;
+        public Button sisterButton;
+        public Button bathroomButton;
+        public Button kitchenButton;
+        public Button windowButton;
+        public Button porchButton;
 
         // Exploration System
         public ExplorationSystem explorationSystem;
@@ -37,6 +47,7 @@ namespace Hunger.UI
         public RoomItemManager parentRoomManager;
         public RoomItemManager bathroomManager;
         public NarrativeManager narrativeManager;
+        private Coroutine dialogueCoroutine;
 
         // Morning dialogue data
         public List<MorningDialogueData> parentMorningDialogues;
@@ -83,11 +94,50 @@ namespace Hunger.UI
         public void OpenJournal()
         {
             optionsPanel.SetActive(true);
+            UpdateMorningJournalButtons();
 
             if (IsDayOne())
             {
                 journalOpenedToday = true;
             }
+        }
+
+        void SetJournalButtonState(Button button, bool enabled)
+        {
+            if (button == null) return;
+
+            button.interactable = enabled;
+
+            TextMeshProUGUI text = button.GetComponentInChildren<TextMeshProUGUI>();
+            if (text != null)
+            {
+                Color c = text.color;
+                c.a = enabled ? 1f : 0.35f;
+                text.color = c;
+            }
+        }
+
+        void UpdateMorningJournalButtons()
+        {
+            if (narrativeManager.requestPending)
+            {
+                SetJournalButtonState(kitchenButton, false);
+                SetJournalButtonState(porchButton, false);
+                SetJournalButtonState(windowButton, true);
+                return;
+            }
+
+            if (isMorningPhase)
+            {
+                SetJournalButtonState(kitchenButton, false);
+                SetJournalButtonState(porchButton, false);
+                SetJournalButtonState(windowButton, false);
+                return;
+            }
+
+            SetJournalButtonState(kitchenButton, true);
+            SetJournalButtonState(porchButton, true);
+            SetJournalButtonState(windowButton, true);
         }
 
         // CLOSE BUTTON
@@ -112,6 +162,8 @@ namespace Hunger.UI
                 dayOneSearchHintShown = false;
                 dayOneBarnHintShown = false;
             }
+
+            UpdateMorningJournalButtons();
         }
 
         bool IsDayOne()
@@ -140,6 +192,13 @@ namespace Hunger.UI
             {
                 ShowDayOneInstruction("Click your journal.");
             }
+        }
+
+        public void UpdateStatSliders(int home, int self, int family)
+        {
+            homeSlider.value = home;
+            selfSlider.value = self;
+            familySlider.value = family;
         }
 
         public void HideDayOneInstruction()
@@ -246,6 +305,7 @@ namespace Hunger.UI
             ));
 
             nm.RegisterMorningInteraction();
+            UpdateMorningJournalButtons();
         }
 
         public void GoToParentsRoom()
@@ -308,6 +368,7 @@ namespace Hunger.UI
             ));
 
             nm.RegisterMorningInteraction();
+            UpdateMorningJournalButtons();
         }
 
         public void GoToKitchen()
@@ -320,7 +381,7 @@ namespace Hunger.UI
 
             if (isMorningPhase)
             {
-                ShowDialogue("You don’t feel like eating right now.");
+                
                 return;
             }
 
@@ -405,6 +466,7 @@ namespace Hunger.UI
             ));
 
             nm.RegisterMorningInteraction();
+            UpdateMorningJournalButtons();
         }
 
         public void LookOutWindow()
@@ -412,7 +474,7 @@ namespace Hunger.UI
             // BLOCK during morning
             if (isMorningPhase)
             {
-                ShowDialogue("I should check on everyone first.");
+                
                 return;
             }
 
@@ -431,14 +493,21 @@ namespace Hunger.UI
         {
             NarrativeUI ui = FindFirstObjectByType<NarrativeUI>();
             RequestSystem request = FindFirstObjectByType<RequestSystem>();
+            FindFirstObjectByType<UIBackgroundController>().SetRequest();
+
+            ui.SetTextSize(90f);
 
             yield return StartCoroutine(ui.ShowTextRoutine(
-                "Don wants: " + request.currentRequest
+                "DON WANTS: " + request.currentRequest
             ));
 
+            FindFirstObjectByType<UIManager>().UpdateRequest(request.currentRequest);
+
+            ui.ResetTextSize();
             nightAudio?.Play();
 
             narrativeManager.requestPending = false;
+            UpdateMorningJournalButtons();
 
             // TURN OFF 
             if (sunlight != null)
@@ -454,13 +523,13 @@ namespace Hunger.UI
         {
             if (narrativeManager.requestPending)
             {
-                ShowDialogue("I should see what Don wants first.");
+                
                 return;
             }
 
             if (isMorningPhase)
             {
-                ShowDialogue("I can't go outside yet.");
+                
                 return;
             }
 
@@ -480,13 +549,19 @@ namespace Hunger.UI
         public void ShowDialogue(string text)
         {
             dialogueText.text = text;
-            StartCoroutine(ClearDialogueAfterTime());
+            if (dialogueCoroutine != null)
+            {
+                StopCoroutine(dialogueCoroutine);
+            }
+
+            dialogueCoroutine = StartCoroutine(ClearDialogueAfterTime());
         }
 
         IEnumerator ClearDialogueAfterTime()
         {
             yield return new WaitForSeconds(3f);
             dialogueText.text = "";
+            dialogueCoroutine = null;
         }
 
         // --- SACRIFICE FUNCTIONS ---
@@ -515,6 +590,10 @@ namespace Hunger.UI
                     system.SacrificeItem(item);
                 });
             }
+        }
+        public void ClearRequest()
+        {
+            requestText.text = "Don Wants: ???";
         }
 
         public void HideSacrificeOptions()

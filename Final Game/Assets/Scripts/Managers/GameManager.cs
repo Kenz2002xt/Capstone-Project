@@ -36,6 +36,7 @@ namespace Hunger.Managers
             uiManager.journal.SetActive(true);          // bring journal back
             uiManager.optionsPanel.SetActive(false);    // close journal panel
             uiManager.HideSacrificeOptions();           // hide sacrifice UI
+            uiManager.ClearRequest();
 
             // --- RESET CURSOR ---
             Cursor.visible = true;
@@ -61,7 +62,6 @@ namespace Hunger.Managers
             // Check if any survival stat has reached zero
             if (statSystem.IsDead())
             {
-                // If player is dead then show Game Lost on the UI
                 SceneManager.LoadScene("GameOverScene");
                 Debug.Log("You did not survive winter");
                 return;
@@ -73,8 +73,21 @@ namespace Hunger.Managers
             // If player completed more days than required
             if (currentDay > maxDays)
             {
-                // Show Game Won message on UI
-                SceneManager.LoadScene("WinScene");
+                int lowestStat = Mathf.Min(statSystem.familyStat, statSystem.homeStat, statSystem.selfStat);
+
+                if (lowestStat == statSystem.familyStat)
+                {
+                    SceneManager.LoadScene("WinScene1");
+                }
+                else if (lowestStat == statSystem.homeStat)
+                {
+                    SceneManager.LoadScene("WinScene2");
+                }
+                else
+                {
+                    SceneManager.LoadScene("WinScene3");
+                }
+
                 Debug.Log("You survived until spring");
                 return;
             }

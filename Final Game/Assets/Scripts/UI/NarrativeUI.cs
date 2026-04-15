@@ -23,18 +23,36 @@ namespace Hunger.UI
 
         [Header("Timing")]
         public float typeSpeed = 0.02f;
-        public float textHoldTime = 1.5f;
+        public float textHoldTime = 2f;
 
         bool isShowing;
+
+        float defaultFontSize;
 
         public bool IsShowing() => isShowing;
 
         void Awake()
         {
             panel.SetActive(false);
+
+            if (textBox != null)
+                defaultFontSize = textBox.fontSize;
         }
 
         // ---------------- TEXT ----------------
+
+        public void SetTextSize(float newSize)
+        {
+            if (textBox != null)
+                textBox.fontSize = newSize;
+        }
+
+        public void ResetTextSize()
+        {
+            if (textBox != null)
+                textBox.fontSize = defaultFontSize;
+        }
+
         public IEnumerator ShowTextRoutine(string message, bool instant = false)
         {
             isShowing = true;

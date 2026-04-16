@@ -17,10 +17,10 @@ collapses first, or by surviving until December 10th with the lasting consequenc
   Each day consists of exploration, character interaction, receiving a request from Don, and selecting an item to sacrifice.
 
 - **Sacrifice System:**  
-  Players choose from discovered items to give up at the end of each day. Each item belongs to one of three categories: **Home, Family, or Self**, and sacrificing them reduces that category.
+  Players choose from discovered items to give up at the end of each day. Each item belongs to one of three categories: Home, Family, or Self, and sacrificing them reduces that category.
 
 - **Category System:**  
-  The game tracks three core values—Home, Family, and Self—which represent the player’s stability. These values decrease over time based on player decisions and events.
+  The game tracks three core values (Home, Family, and Self) which represent the player’s stability. These values decrease over time based on player decisions and events.
 
 - **Dynamic Events:**  
   Daily events introduce unpredictability by removing items, providing bonuses, or creating additional pressure on the player’s decisions.
